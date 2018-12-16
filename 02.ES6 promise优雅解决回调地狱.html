@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>优雅解决回调地狱</title>
+</head>
+<body>
+<img src="img/1.png" alt="">
+
+
+<script>
+
+
+    //1.哪么我们如何优雅解决这个"回调地狱"呢?
+    //实现多个异步代码,变成同步执行
+
+
+    /**********************************************************************************************************/
+
+
+
+    //2.我这里采用的ES6 中的Promise方法来解决
+
+
+    /**********************************************************************************************************/
+
+
+
+    //3.什么是Promise呢?
+    // Promise 是ES6中的一个构造函数，有then、catch等的方法,这里主要讲then方法
+    // Promise的构造函数,接收一个函数作为参数，并且该函数传入两个参数：resolve，reject，这两个参数也是函数
+    // 分别表示异步操作执行成功后的回调函数和异步操作执行失败后的回调函数。
+    // 按照标准来讲,Promise的初始状态是pending,resolve是将Promise的状态置为fullfiled，reject是将Promise
+    // 的状态置为rejected
+
+
+
+
+    /**********************************************************************************************************/
+
+
+    //4.听到这里,有点懵逼,那我们可以看下图解,应该会清晰一些
+
+
+    /**********************************************************************************************************/
+
+
+    //5.概念理解了,哪么我们就定义一个最简单的Promise
+    //先在外面定义个容器
+    // var p = new Promise ( function ( resolve, reject ) {
+    //     //resolve 参数都是函数   来自实例
+    //     //reject 该参数是函数    来自实例
+    //
+    //     //在里面放异步代码
+    //     setTimeout ( function () {
+    //         console.log ( "第1个定时器" );
+    //
+    //         //这两个函数只能执行一个，要么成功要么失败
+    //         resolve ( "成功执行的函数" );
+    //         reject ( "失败执行的函数" );
+    //     }, 1000 );
+    //
+    // } );
+
+    // 在上面的代码中，我们执行了一个异步操作，也就是setTimeout，1秒后，输出“第1个定时器”，
+    // 并且调用resolve方法,当然现在还是还没有定义它执行的代码
+
+
+
+    /**********************************************************************************************************/
+
+
+    //6.大家注意到没有,我们只是定义了new了一个对象，但是并没有调用它,它就自动执行里面的代码了
+    //正因为,它会自动执行,我们想让它能被控制,哪么就要在用Promise的时候把它包在一个函数中，在需要的时候去运行这个函数,即可
+
+
+    // function runAsync () {
+    //
+    //     var p = new Promise ( function ( resolve, reject ) {
+    //
+    //         setTimeout ( function () {
+    //
+    //             console.log ( "第1个定时器" );
+    //
+    //             resolve ( "成功执行的函数" );
+    //             reject ( "失败执行的函数" );
+    //
+    //         }, 1000 );
+    //     } );
+    //
+    //     //返回一个Promise对象
+    //     return p;
+    // }
+    //
+    // //调用函数runAsync
+    // runAsync ();
+
+
+    //函数执行的效果和上面是一样的,只不过,我们可以控制Promise执行了
+
+
+
+
+    /**********************************************************************************************************/
+
+
+
+    // 7.需要注意的是,我们在包装函数的最后，会return出Promise对象
+    // 也就是说，执行上面函数我们得到了一个Promise对象,为什么要这样做呢?
+    // 还记得刚才我们说Promise对象上有then这个方法吧?,其实返回一个Promise对象就是要调用它的then方法
+    // 哪么then方法有什么用呢?我们先看下效果
+
+    // function runAsync () {
+    //
+    //     var p = new Promise ( function ( resolve, reject ) {
+    //
+    //         setTimeout ( function () {
+    //             console.log ( "第1个定时器" );
+    //
+    //             resolve ( "成功执行的函数" );
+    //             reject ( "失败执行的函数" );
+    //         }, 1000 );
+    //     } );
+    //
+    //     return p;
+    // }
+    //
+    //
+    // //执行runAsync,返回promise对象,并调用then方法,先看下效果
+    // runAsync ().then ( function ( data ) {
+    //     //data参数,拿到resolve函数传过来的数据
+    //     //这里执行异步代码完成后的代码
+    //     //可以用传过来的数据做些其他操作
+    //     console.log ( data );
+    //
+    // } );
+
+    //从运行效果我们可以看到,异步函数(定时器)执行完毕后打印了"第1个定时器",由于异步代码执行成功,
+    //所以所以promise执行resolve ( "成功执行的函数" );回调函数,注意,是在异步代码执行后才会执行这个回调函数
+
+
+    //因此可以知道在runAsync()的返回上直接调用then方法，then接收一个参数，是函数，
+    //并且会拿到我们在runAsync中调用resolve时传的的参数。
+
+
+    // 所以看出,then里面的函数就跟我们平时的回调函数一个意思，能够在runAsync这个异步任务执行完成之后被执行。
+    // 这就是Promise的作用了，简单来讲，就是能把原来的回调写法分离出来，
+    // 在异步操作执行完后，用链式调用的方式执行回调函数。
+
+
+    /**********************************************************************************************************/
+
+
+
+    //8.可能还是有点懵,哪么我们用promise来改造我们之前的回调的代码,就会明白了
+
+    //1)将异步代码分放到promise容器中,并封装到函数内
+
+    //第1个异步函数
+    function runAsync1 () {
+        return new Promise ( function ( resolve, reject ) {
+            setTimeout ( function () {
+                console.log ( "第1个定时器" );
+                resolve ( "第1个定时器执行成功" );
+            }, 1000 );
+        } );
+    }
+
+
+    //第2个异步函数
+    function runAsync2 () {
+        return new Promise ( function ( resolve, reject ) {
+            setTimeout ( function () {
+                console.log ( "第2个定时器" );
+                resolve ( "第2个定时器执行成功" );
+            }, 1000 );
+        } );
+    }
+
+    //第3个异步函数
+    function runAsync3 () {
+        return new Promise ( function ( resolve, reject ) {
+            setTimeout ( function () {
+                console.log ( "第3个定时器" );
+                resolve ( "第3个定时器执行成功" );
+            }, 1000 );
+        } );
+    }
+
+    //第4个异步函数
+    function runAsync4 () {
+        return new Promise ( function ( resolve, reject ) {
+            setTimeout ( function () {
+                console.log ( "第4个定时器" );
+                resolve ( "第4个定时器执行成功" );
+            }, 1000 );
+        } );
+    }
+
+    //第5个异步函数
+    function runAsync5 () {
+        return new Promise ( function ( resolve, reject ) {
+            setTimeout ( function () {
+                console.log ( "第5个定时器" );
+                resolve ( "第5个定时器执行成功" );
+            }, 1000 );
+        } );
+    }
+
+    //................................................................
+
+    //调用我们之前写好的函数来解决回调地狱,这样调用方式调用,我们就可以实现所有.then()里面的代码都同步执行了,不用嵌套了
+    //现在的代码时平行的了
+    //
+    runAsync1 ().then ( function ( data ) {
+        console.log ( data );
+        return runAsync2 ();
+    } ) .then ( function ( data ) {
+        console.log ( data );
+        return runAsync3 ();
+    } ) .then ( function ( data ) {
+        console.log ( data );
+        return runAsync4 ();
+    } ) .then ( function ( data ) {
+        console.log ( data );
+        return runAsync5 ();
+    } ) .then ( function ( data ) {
+        console.log ( data );
+    } );
+   
+
+   
+   
+   
+
+
+
+
+
+
+    // 总结一下:
+    // 从表面上看，Promise只是能够简化层层回调的写法，而实质上，Promise的精髓是“状态”，
+    // 用维护状态、传递状态的方式来使得回调函数能够及时调用，
+    // 它比以前我们写的回调函数传递callback函数要简单、灵活
+</script>
+</body>
+</html>
